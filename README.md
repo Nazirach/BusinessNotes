@@ -101,3 +101,5 @@ This repository is deployment-platform agnostic. A production host should:
 ## Project status
 
 This repository is the GitHub-ready source baseline prepared before the real usage/runtime audit. Passing CI means the code passes the configured static/unit/build checks; it does **not** by itself prove production database, OAuth, media storage, LLM, or external-service configuration.
+
+<!-- CI source fixer trigger -->
