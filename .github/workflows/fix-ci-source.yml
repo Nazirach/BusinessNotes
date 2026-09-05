@@ -1,0 +1,74 @@
+name: Fix CI Source
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: sync/full-source-tree
+          fetch-depth: 0
+
+      - name: Apply TypeScript fixes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          ai = Path("server/ai.ts")
+          text = ai.read_text()
+          old = '  return result.choices?.[0]?.message?.content ?? "";'
+          new = '''  const content = result.choices?.[0]?.message?.content;
+          return typeof content === "string" ? content : content?.filter(part => part.type === "text").map(part => part.text).join("\\n") ?? "";'''
+          if old not in text:
+              raise SystemExit("server/ai.ts target not found")
+          ai.write_text(text.replace(old, new, 1))
+
+          ts = Path("tsconfig.json")
+          text = ts.read_text()
+          if '"target": "ES2022"' not in text:
+              marker = '    "module": "ESNext",\n'
+              if marker not in text:
+                  raise SystemExit("tsconfig marker not found")
+              text = text.replace(marker, marker + '    "target": "ES2022",\n', 1)
+          ts.write_text(text)
+
+          db = Path("server/db.ts")
+          text = db.read_text()
+          duplicate_comment_author = '''  const author = await db.select({ authorId: posts.authorId }).from(posts).where(eq(posts.id, postId)).limit(1);\n  if (author[0] && author[0].authorId !== userId) await createNotification({ userId: author[0].authorId, type: "comment", title: "New comment", body: body.slice(0, 180) });'''
+          if duplicate_comment_author not in text:
+              raise SystemExit("comment duplicate target not found")
+          text = text.replace(duplicate_comment_author, '''  if (author[0]?.authorId !== userId) await createNotification({ userId: author[0]!.authorId, type: "comment", title: "New comment", body: body.slice(0, 180) });''', 1)
+
+          duplicate_like_author = '''  const author = await db.select({ authorId: posts.authorId }).from(posts).where(eq(posts.id, postId)).limit(1);\n  if (liked && author[0] && author[0].authorId !== userId) await createNotification({ userId: author[0].authorId, type: "like", title: "New like", body: "Someone liked your post." });'''
+          if duplicate_like_author not in text:
+              raise SystemExit("like duplicate target not found")
+          text = text.replace(duplicate_like_author, '''  if (liked && author[0] && author[0].authorId !== userId) await createNotification({ userId: author[0].authorId, type: "like", title: "New like", body: "Someone liked your post." });''', 1)
+
+          old_notification = 'entityType: "media", entityId: mediaId });'
+          if old_notification not in text:
+              raise SystemExit("notification fields target not found")
+          text = text.replace(old_notification, '});', 1)
+          db.write_text(text)
+          PY
+
+      - name: Verify changes
+        run: |
+          grep -n 'target\|return typeof content' tsconfig.json server/ai.ts
+          grep -n 'media approved\|media rejected' server/db.ts
+          pnpm --version || true
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add server/ai.ts server/db.ts tsconfig.json
+          git diff --cached --check
+          git commit -m "fix: resolve TypeScript CI errors"
+          git push origin HEAD:sync/full-source-tree
