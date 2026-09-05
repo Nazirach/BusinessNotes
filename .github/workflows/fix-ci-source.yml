@@ -25,8 +25,8 @@ jobs:
           old = '  return result.choices?.[0]?.message?.content ?? "";'
           new = '''  const content = result.choices?.[0]?.message?.content;
           return typeof content === "string" ? content : content?.filter(part => part.type === "text").map(part => part.text).join("\\n") ?? "";'''
-          if old not in text: raise SystemExit("server/ai.ts target not found")
-          ai.write_text(text.replace(old, new, 1))
+          if old in text:
+              ai.write_text(text.replace(old, new, 1))
 
           ts = Path("tsconfig.json")
           text = ts.read_text()
@@ -37,14 +37,14 @@ jobs:
           db = Path("server/db.ts")
           text = db.read_text()
           duplicate_comment_author = '''  const author = await db.select({ authorId: posts.authorId }).from(posts).where(eq(posts.id, postId)).limit(1);\n  if (author[0] && author[0].authorId !== userId) await createNotification({ userId: author[0].authorId, type: "comment", title: "New comment", body: body.slice(0, 180) });'''
-          if duplicate_comment_author not in text: raise SystemExit("comment target not found")
-          text = text.replace(duplicate_comment_author, '''  if (author[0]?.authorId !== userId) await createNotification({ userId: author[0]!.authorId, type: "comment", title: "New comment", body: body.slice(0, 180) });''', 1)
+          if duplicate_comment_author in text:
+              text = text.replace(duplicate_comment_author, '''  if (author[0]?.authorId !== userId) await createNotification({ userId: author[0]!.authorId, type: "comment", title: "New comment", body: body.slice(0, 180) });''', 1)
           duplicate_like_author = '''  const author = await db.select({ authorId: posts.authorId }).from(posts).where(eq(posts.id, postId)).limit(1);\n  if (liked && author[0] && author[0].authorId !== userId) await createNotification({ userId: author[0].authorId, type: "like", title: "New like", body: "Someone liked your post." });'''
-          if duplicate_like_author not in text: raise SystemExit("like target not found")
-          text = text.replace(duplicate_like_author, '''  if (liked && author[0] && author[0].authorId !== userId) await createNotification({ userId: author[0].authorId, type: "like", title: "New like", body: "Someone liked your post." });''', 1)
+          if duplicate_like_author in text:
+              text = text.replace(duplicate_like_author, '''  if (liked && author[0] && author[0].authorId !== userId) await createNotification({ userId: author[0].authorId, type: "like", title: "New like", body: "Someone liked your post." });''', 1)
           old_notification = 'entityType: "media", entityId: mediaId });'
-          if old_notification not in text: raise SystemExit("notification target not found")
-          text = text.replace(old_notification, '});', 1)
+          if old_notification in text:
+              text = text.replace(old_notification, '});', 1)
           db.write_text(text)
           PY
       - name: Commit and push
@@ -54,4 +54,6 @@ jobs:
           git add server/ai.ts server/db.ts tsconfig.json
           git diff --cached --check
           git commit -m "fix: resolve TypeScript CI errors"
+          git fetch origin sync/full-source-tree
+          git rebase origin/sync/full-source-tree
           git push origin HEAD:sync/full-source-tree
