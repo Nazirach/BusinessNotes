@@ -24,7 +24,9 @@ jobs:
           unzip -q 'BusinessNotes-GitHub-ready.zip' -d /tmp/businessnotes-source
           cp -a /tmp/businessnotes-source/. .
           rm -f 'BusinessNotes-GitHub-ready.zip' 'BusinessNotes-GitHub-ready (1).zip'
-          rm -f '.github/workflows/bootstrap-extract.yml'
+          # The default GITHUB_TOKEN cannot push workflow-file changes.
+          # Keep this bootstrap workflow unchanged and add ci.yml separately after extraction.
+          rm -f '.github/workflows/ci.yml'
 
       - name: Commit extracted source tree
         shell: bash
@@ -39,5 +41,3 @@ jobs:
           fi
           git commit -m 'Extract BusinessNotes source tree'
           git push origin "HEAD:${GITHUB_REF_NAME}"
-
-# Trigger a fresh run after updating the GitHub App installation permissions.
