@@ -1,6 +1,8 @@
 name: Fix CI Source
 
 on:
+  push:
+    branches: [sync/full-source-tree]
   workflow_dispatch:
 
 permissions:
@@ -8,6 +10,7 @@ permissions:
 
 jobs:
   fix:
+    if: github.event_name == 'workflow_dispatch' || github.event.head_commit.message != 'fix: resolve TypeScript CI errors'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -62,7 +65,6 @@ jobs:
         run: |
           grep -n 'target\|return typeof content' tsconfig.json server/ai.ts
           grep -n 'media approved\|media rejected' server/db.ts
-          pnpm --version || true
 
       - name: Commit and push
         run: |
