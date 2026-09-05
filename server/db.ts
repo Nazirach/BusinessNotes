@@ -649,8 +649,7 @@ export async function createPostComment(userId: number, postId: number, body: st
   }).from(postComments).leftJoin(users, eq(postComments.userId, users.id))
     .where(eq(postComments.id, insertedId)).limit(1);
   if (!saved[0]) throw new Error("Comment could not be loaded after save");
-  const author = await db.select({ authorId: posts.authorId }).from(posts).where(eq(posts.id, postId)).limit(1);
-  if (author[0] && author[0].authorId !== userId) await createNotification({ userId: author[0].authorId, type: "comment", title: "New comment", body: body.slice(0, 180) });
+  if (author[0]?.authorId !== userId) await createNotification({ userId: author[0]!.authorId, type: "comment", title: "New comment", body: body.slice(0, 180) });
   return saved[0];
 }
 
@@ -672,7 +671,6 @@ export async function togglePostLike(userId: number, postId: number) {
     liked = true;
   }
   const [{ count: likeCount }] = await db.select({ count: count() }).from(postLikes).where(eq(postLikes.postId, postId));
-  const author = await db.select({ authorId: posts.authorId }).from(posts).where(eq(posts.id, postId)).limit(1);
   if (liked && author[0] && author[0].authorId !== userId) await createNotification({ userId: author[0].authorId, type: "like", title: "New like", body: "Someone liked your post." });
   return { liked, likes: Number(likeCount) };
 }
@@ -1094,7 +1092,7 @@ export async function reviewMediaModeration(userId: number, mediaId: number, dec
   if (existing) await db.update(mediaModeration).set({ status: decision, reviewedBy: userId, reviewedAt: new Date(), note: note?.trim() || null }).where(eq(mediaModeration.id, existing.id));
   else await db.insert(mediaModeration).values({ mediaId, status: decision, reviewedBy: userId, reviewedAt: new Date(), note: note?.trim() || null });
   await db.insert(auditLogs).values({ userId, action: "media.moderation.review", entityType: "media", entityId: mediaId, metadata: JSON.stringify({ decision, note: note?.trim() || null }) });
-  if (media.ownerId !== userId) await db.insert(notifications).values({ userId: media.ownerId, type: "media.moderation", title: decision === "approved" ? "Media approved" : "Media rejected", body: note?.trim() || `Your ${media.kind} was ${decision}.`, entityType: "media", entityId: mediaId });
+  if (media.ownerId !== userId) await db.insert(notifications).values({ userId: media.ownerId, type: "media.moderation", title: decision === "approved" ? "Media approved" : "Media rejected", body: note?.trim() || `Your ${media.kind} was ${decision}.`, });
   return (await db.select().from(mediaModeration).where(eq(mediaModeration.mediaId, mediaId)).limit(1))[0];
 }
 

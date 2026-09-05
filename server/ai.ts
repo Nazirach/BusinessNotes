@@ -11,7 +11,8 @@ async function ask(system: string, user: string, maxTokens = 900) {
     ],
     maxTokens,
   });
-  return result.choices?.[0]?.message?.content ?? "";
+  const content = result.choices?.[0]?.message?.content;
+return typeof content === "string" ? content : content?.filter(part => part.type === "text").map(part => part.text).join("\n") ?? "";
 }
 
 export async function generateBusinessContent(userId: number, input: {
