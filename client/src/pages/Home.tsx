@@ -192,6 +192,7 @@ function PostCard({ post, onInterest, social, isAuthenticated }: { post: Post; o
   const [commentOpen, setCommentOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [localSocial, setLocalSocial] = useState<PostSocial>(social ?? { likes: post.likes, comments: post.comments, saves: 0, liked: false, saved: false, following: false });
+  const [localInterested, setLocalInterested] = useState(post.interested);
   const commentsQuery = trpc.business.comments.useQuery({ postId: post.id }, { enabled: isPersisted && commentOpen });
   const likeMutation = trpc.business.like.useMutation({
     onSuccess: result => setLocalSocial(previous => ({ ...previous, liked: result.liked, likes: result.likes })),
@@ -230,7 +231,12 @@ function PostCard({ post, onInterest, social, isAuthenticated }: { post: Post; o
     return true;
   };
   const handleLike = () => {
-    if (!requireSocialAccess() || !requireAuth()) return;
+    if (!isPersisted) {
+      setLocalSocial(previous => ({ ...previous, liked: !previous.liked, likes: previous.liked ? Math.max(0, previous.likes - 1) : previous.likes + 1 }));
+      toast.success(t("Like updated in preview"));
+      return;
+    }
+    if (!requireAuth()) return;
     likeMutation.mutate({ postId: post.id });
   };
   const handleSave = () => {
@@ -244,18 +250,30 @@ function PostCard({ post, onInterest, social, isAuthenticated }: { post: Post; o
     followMutation.mutate({ userId: post.authorId });
   };
   const handleComments = () => {
-    if (!requireSocialAccess()) return;
+    if (!isPersisted) {
+      setCommentOpen(previous => !previous);
+      return;
+    }
     setCommentOpen(previous => !previous);
   };
   const handleComment = () => {
-    if (!requireSocialAccess() || !requireAuth()) return;
+    if (!isPersisted) {
+      toast.info(t("Comments become live when this content is published"));
+      return;
+    }
+    if (!requireAuth()) return;
     if (!commentText.trim()) return toast.error(t("Write a comment first"));
     commentMutation.mutate({ postId: post.id, body: commentText.trim() });
+  };
+  const handleInterest = () => {
+    setLocalInterested(previous => previous + 1);
+    onInterest(post.id);
+    toast.success(t("Interest updated in preview"));
   };
   return <article className="border-b border-[#ebe9e3] py-6 first:pt-1">
     <div className="flex gap-3"><Avatar className="h-10 w-10 border border-white shadow-sm"><AvatarFallback className="bg-[#e5eff2] text-xs font-extrabold text-[#28566d]">{post.initials}</AvatarFallback></Avatar><div className="min-w-0 flex-1"><div className="flex items-start justify-between"><div><div className="flex items-center gap-2"><span className="text-sm font-extrabold text-[#1c4057]">{post.author}</span>{post.author === "BusinessNotes Desk" && <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#2b9a8b] text-[9px] font-black text-white">✓</span>}<span className="text-[11px] text-[#99a3a8]">· {post.time}</span></div><p className="mt-0.5 text-[11px] font-medium text-[#8a989f]">{post.role}</p></div><div className="flex items-center gap-2"><button onClick={handleFollow} disabled={!post.authorId || followMutation.isPending} className={`rounded-full px-2.5 py-1 text-[10px] font-extrabold ${localSocial.following ? "bg-[#e0f3ee] text-[#277568]" : "bg-[#f4f5f1] text-[#7c9195]"}`}>{localSocial.following ? t("Following") : t("Follow")}</button>{isAuthenticated && post.authorId && <div className="flex items-center gap-1"><button aria-label={t("Block author")} onClick={() => blockMutation.mutate({ userId: post.authorId! })} disabled={blockMutation.isPending} className="rounded-full px-2 py-1 text-[9px] font-bold text-[#9b5549] hover:bg-[#fff1ee]">Block</button><button aria-label={t("Mute author")} onClick={() => muteMutation.mutate({ userId: post.authorId! })} disabled={muteMutation.isPending} className="rounded-full px-2 py-1 text-[9px] font-bold text-[#6f858c] hover:bg-[#f2f5f3]">Mute</button></div>}</div></div>
     <div className={`mt-4 rounded-[18px] border border-[#eeeae3] bg-gradient-to-br p-5 ${post.accent}`}><Badge className="border-0 bg-white/80 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.1em] text-[#446975]">{post.type}</Badge><h3 className="mt-3 max-w-[560px] text-[20px] font-extrabold leading-[1.15] tracking-[-0.035em] text-[#173b59]">{post.title}</h3><p className="mt-3 max-w-[590px] text-[13px] leading-6 text-[#536b75]">{post.body}</p><div className="mt-4 flex flex-wrap gap-2">{post.tags.map(tag => <span key={tag} className="rounded-full bg-white/70 px-2.5 py-1 text-[10px] font-bold text-[#69808a]">#{tag}</span>)}</div></div>
-    <div className="mt-3 flex flex-wrap items-center gap-1 text-xs text-[#7c8b92]"><button aria-label={t("Like post")} onClick={handleLike} disabled={likeMutation.isPending} className={`flex items-center gap-1.5 rounded-full px-2.5 py-2 transition hover:bg-[#f7f5ef] ${localSocial.liked ? "font-bold text-[#dd6c62]" : ""}`}><Heart size={15} fill={localSocial.liked ? "currentColor" : "none"} /> {localSocial.likes}</button><button onClick={handleComments} className="flex items-center gap-1.5 rounded-full px-2.5 py-2 hover:bg-[#f7f5ef]"><MessageCircle size={15} /> {localSocial.comments}</button><button onClick={() => onInterest(post.id)} className="flex items-center gap-1.5 rounded-full px-2.5 py-2 text-[#7c8b92] transition hover:bg-[#f7f5ef]"><Flame size={15} /> {post.interested} {t("interested")}</button><span className="flex-1" /><button aria-label={t("Share post")} onClick={() => { navigator.clipboard?.writeText("https://businessnotes.app/post/" + post.id); toast.success(t("Link copied to clipboard")); }} className="rounded-full p-2 hover:bg-[#f7f5ef]"><Share2 size={15} /></button><button aria-label={t("Save post")} onClick={handleSave} disabled={saveMutation.isPending} className={`rounded-full p-2 hover:bg-[#f7f5ef] ${localSocial.saved ? "text-[#2b9a8b]" : ""}`}><Bookmark size={15} fill={localSocial.saved ? "currentColor" : "none"} /></button></div><div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-medium text-[#91a0a3]"><ShieldCheck size={12} className="text-[#2b9a8b]" /> Source: BusinessNotes editorial desk · Updated today <span>·</span>{isPersisted && isAuthenticated && (post.type === "News" || post.type === "Insight") && <button onClick={() => { const question = window.prompt(t("Ask a source-grounded question")); if (question?.trim()) groundedMutation.mutate({ postId: post.id, question: question.trim() }); }} className="font-bold text-[#2a7181] hover:underline">{t("Ask grounded AI")}</button>}<button onClick={() => { if (!requireAuth()) return; const reason = window.prompt(t("Why are you reporting this content?")); if (reason?.trim()) reportMutation.mutate({ postId: post.id, reason: reason.trim() }); }} className="font-bold text-[#71909a] underline-offset-2 hover:underline">{t("Report content")}</button></div>{commentOpen && <div className="mt-3 space-y-3">{commentsQuery.isLoading && <p className="text-[11px] text-[#91a0a3]">{t("Loading comments...")}</p>}{commentsQuery.data?.map(comment => <div key={comment.id} className="rounded-xl bg-[#f8f9f5] p-3"><p className="text-[11px] font-extrabold text-[#36596a]">{comment.authorName || t("BusinessNotes member")}</p><p className="mt-1 text-xs leading-5 text-[#5d737b]">{comment.body}</p></div>)}<div className="flex gap-2"><Input value={commentText} onChange={e => setCommentText(e.target.value)} placeholder={t("Add a thoughtful comment...")} className="h-9 bg-white text-xs shadow-none" /><Button onClick={handleComment} disabled={commentMutation.isPending} className="h-9 rounded-full bg-[#173b59] px-3 text-xs font-bold">{commentMutation.isPending ? t("Sending...") : t("Send")}</Button></div></div>}</div>
+    <div className="mt-3 flex flex-wrap items-center gap-1 text-xs text-[#7c8b92]"><button aria-label={t("Like post")} onClick={handleLike} disabled={likeMutation.isPending} className={`flex items-center gap-1.5 rounded-full px-2.5 py-2 transition hover:bg-[#f7f5ef] ${localSocial.liked ? "font-bold text-[#dd6c62]" : ""}`}><Heart size={15} fill={localSocial.liked ? "currentColor" : "none"} /> {localSocial.likes}</button><button onClick={handleComments} className="flex items-center gap-1.5 rounded-full px-2.5 py-2 hover:bg-[#f7f5ef]"><MessageCircle size={15} /> {localSocial.comments}</button><button onClick={handleInterest} className="flex items-center gap-1.5 rounded-full px-2.5 py-2 text-[#7c8b92] transition hover:bg-[#f7f5ef]"><Flame size={15} /> {localInterested} {t("interested")}</button><span className="flex-1" /><button aria-label={t("Share post")} onClick={() => { navigator.clipboard?.writeText("https://businessnotes.app/post/" + post.id); toast.success(t("Link copied to clipboard")); }} className="rounded-full p-2 hover:bg-[#f7f5ef]"><Share2 size={15} /></button><button aria-label={t("Save post")} onClick={handleSave} disabled={saveMutation.isPending} className={`rounded-full p-2 hover:bg-[#f7f5ef] ${localSocial.saved ? "text-[#2b9a8b]" : ""}`}><Bookmark size={15} fill={localSocial.saved ? "currentColor" : "none"} /></button></div><div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-medium text-[#91a0a3]"><ShieldCheck size={12} className="text-[#2b9a8b]" /> Source: BusinessNotes editorial desk · Updated today <span>·</span>{isPersisted && isAuthenticated && (post.type === "News" || post.type === "Insight") && <button onClick={() => { const question = window.prompt(t("Ask a source-grounded question")); if (question?.trim()) groundedMutation.mutate({ postId: post.id, question: question.trim() }); }} className="font-bold text-[#2a7181] hover:underline">{t("Ask grounded AI")}</button>}<button onClick={() => { if (!requireAuth()) return; const reason = window.prompt(t("Why are you reporting this content?")); if (reason?.trim()) reportMutation.mutate({ postId: post.id, reason: reason.trim() }); }} className="font-bold text-[#71909a] underline-offset-2 hover:underline">{t("Report content")}</button></div>{commentOpen && <div className="mt-3 space-y-3">{commentsQuery.isLoading && <p className="text-[11px] text-[#91a0a3]">{t("Loading comments...")}</p>}{commentsQuery.data?.map(comment => <div key={comment.id} className="rounded-xl bg-[#f8f9f5] p-3"><p className="text-[11px] font-extrabold text-[#36596a]">{comment.authorName || t("BusinessNotes member")}</p><p className="mt-1 text-xs leading-5 text-[#5d737b]">{comment.body}</p></div>)}<div className="flex gap-2"><Input value={commentText} onChange={e => setCommentText(e.target.value)} placeholder={t("Add a thoughtful comment...")} className="h-9 bg-white text-xs shadow-none" /><Button onClick={handleComment} disabled={commentMutation.isPending} className="h-9 rounded-full bg-[#173b59] px-3 text-xs font-bold">{commentMutation.isPending ? t("Sending...") : t("Send")}</Button></div></div>}</div>
     </div>
   </article>;
 }
