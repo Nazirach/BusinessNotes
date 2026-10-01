@@ -95,5 +95,6 @@ export async function storageGetSignedUrl(relKey: string): Promise<string> {
   }
 
   const { url } = (await resp.json()) as { url: string };
+  if (typeof url !== "string" || !url) throw new Error("Forge returned empty signed URL");
   return url;
 }
