@@ -6,13 +6,17 @@ export function filterAndSortQueue<T extends { status: QueueStatus; createdAt: D
   options: { status: QueueStatus | "all"; search?: string; sort?: QueueSort; searchText: (item: T) => string }
 ): T[] {
   const query = options.search?.trim().toLowerCase() ?? "";
+  const timestamp = (value: Date | string) => {
+    const parsed = new Date(value).getTime();
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
   return [...items]
     .filter(item => options.status === "all" || item.status === options.status)
     .filter(item => !query || options.searchText(item).toLowerCase().includes(query))
     .sort((a, b) =>
       options.sort === "oldest"
-        ? +new Date(a.createdAt) - +new Date(b.createdAt)
-        : +new Date(b.createdAt) - +new Date(a.createdAt)
+        ? timestamp(a.createdAt) - timestamp(b.createdAt)
+        : timestamp(b.createdAt) - timestamp(a.createdAt)
     );
 }
 
