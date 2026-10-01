@@ -22,4 +22,10 @@ describe("rate limit baseline", () => {
     expect(() => assertRateLimit("user:1", 1, 0, 100)).toThrow("Invalid rate limit configuration");
     expect(() => assertRateLimit("user:1", 1, 1000, Number.NaN)).toThrow("Invalid rate limit configuration");
   });
+
+  it("normalizes fractional limits and rejects empty keys", () => {
+    assertRateLimit("user:1", 1.9, 1000, 100);
+    expect(() => assertRateLimit("user:1", 1.9, 1000, 100)).toThrow("Rate limit exceeded");
+    expect(() => assertRateLimit("   ", 1, 1000, 100)).toThrow("Rate limit key is required");
+  });
 });
