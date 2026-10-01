@@ -1,7 +1,7 @@
 import { invokeLLM } from "./_core/llm";
 import { getProfile, getPublicEditorialById, listBusinessData, listPostSources, getOpportunityMatches, isPersonalizedRecommendationsEnabled, canUserDiscover } from "./db";
 
-const compact = (value: unknown, max = 5000) => JSON.stringify(value).slice(0, max);
+const compact = (value: unknown, max = 5000) => {\n  const serialized = JSON.stringify(value);\n  return (serialized ?? "null").slice(0, max);\n};
 
 async function ask(system: string, user: string, maxTokens = 900) {
   const result = await invokeLLM({
