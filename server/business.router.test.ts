@@ -21,6 +21,17 @@ describe("business router authorization and validation", () => {
     await expect(caller.business.interest({ opportunityId: 0 })).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
+  it("validates public news search bounds before persistence", async () => {
+    const caller = appRouter.createCaller(context(false));
+    await expect(caller.business.searchNews({ query: "valid", limit: 0 })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.business.searchNews({ query: "valid", limit: 31 })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("requires a meaningful query for news search", async () => {
+    const caller = appRouter.createCaller(context(false));
+    await expect(caller.business.searchNews({ query: "a" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
   it("rejects interest mutation for anonymous callers", async () => {
     const caller = appRouter.createCaller(context(false));
     await expect(caller.business.interest({ opportunityId: 1 })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
@@ -38,4 +49,10 @@ describe("business router authorization and validation", () => {
     const caller = appRouter.createCaller(context());
     await expect(caller.business.createCompany({ name: "A", description: "", industry: "", location: "", website: "" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
+  it("protects bulk editorial review mutations", async () => {
+    const anonymous = appRouter.createCaller(context(false));
+    await expect(anonymous.business.bulkReviewReporter({ requestIds: [1], decision: "approved" })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    await expect(anonymous.business.bulkReviewAppeal({ appealIds: [1], decision: "approved" })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  });
+
 });
