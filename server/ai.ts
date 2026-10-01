@@ -110,7 +110,8 @@ export async function recommendBusinessOpportunities(userId: number, limit = 10)
     return { recommendations: [], explanation: "Rekomendasi personal dinonaktifkan di pengaturan privasi Anda." };
   }
   const matches = await getOpportunityMatches(userId);
-  const top = matches.slice(0, Math.max(1, Math.min(limit, 20)));
+  const safeLimit = Number.isFinite(limit) ? Math.max(1, Math.min(Math.floor(limit), 20)) : 10;
+  const top = matches.slice(0, safeLimit);
   if (!top.length) return { recommendations: [], explanation: "Belum ada peluang yang cukup relevan dengan profil Anda." };
   const profile = await getProfile(userId);
   const explanation = await ask(
