@@ -138,3 +138,49 @@ but:
 These must remain separate.
 
 No application-code integration is performed from the handoff description alone.
+
+
+## Newly recovered Manus archive — 2026-10-01
+
+A user-supplied archive named `businessnotes-manus(1).zip` has now been inspected directly. This is materially stronger evidence than the earlier handoff-only record.
+
+Archive facts:
+
+- 178 files are present in the archive.
+- The archive contains a complete executable application tree under `client/`, `server/`, `shared/`, `drizzle/`, and `e2e/`.
+- The archive contains explicit Manus runtime artifacts under `client/public/__manus__/` and Manus-related runtime files.
+- The archive contains the BusinessNotes package manifest and lockfile.
+- `drizzle/schema.ts` in the archive exactly matches the verified executable-source schema blob already present on `sync/full-source-tree`.
+- `package.json` and the core build configuration also match the executable-source candidate.
+- Several application files do **not** match the current `sync/full-source-tree` versions, including `server/routers.ts`, `server/db.ts`, `server/ai.ts`, `client/src/pages/Home.tsx`, and `client/src/const.ts`.
+- The archive contains new client helper files `client/src/lib/adminQueue.ts` and `client/src/lib/adminQueue.test.ts` that are not present on `sync/full-source-tree`.
+- The archive therefore contains a genuine additional source state and must no longer be classified as “handoff description only”.
+
+### Archive migration evidence
+
+The archive still does **not** provide a safe canonical migration chain:
+
+- `drizzle/meta/_journal.json` records entries through `0015_curly_star_brand`.
+- The journal contains `0005_business_network`, but the archive has no `0005_business_network.sql`.
+- The archive contains both `0015_trust_safety.sql` and `0015_curly_star_brand.sql`.
+- The archive contains `0017_governance.sql`, but its journal does not contain an `0017_governance` entry.
+- `0015_curly_star_brand.sql` contains a large set of table-creation and ALTER statements that overlap objects represented elsewhere in the migration set, including trust/safety, editorial, media, messaging, moderation, and privacy objects.
+- The archive therefore confirms the migration-history inconsistency rather than resolving it.
+
+### Runtime validation limitation
+
+The archive was inspected statically. A fresh dependency installation and runtime test could not be completed in the isolated environment because external package-registry/network access is unavailable.
+
+Therefore:
+
+- archive provenance = **RECOVERED / HIGH CONFIDENCE**
+- source completeness = **RECOVERED**
+- Manus-to-GitHub source reconciliation = **PENDING**
+- migration safety = **BLOCKED**
+- current production runtime proof = **NOT ESTABLISHED**
+
+### Controlled next action
+
+The correct next integration step is to create a dedicated Manus recovery branch from `sync/full-source-tree`, compare the recovered archive file-by-file, and promote only confirmed application-code changes. Migration SQL and Drizzle journal files must remain frozen until their historical sequence is reconstructed.
+
+No production migration or `main` merge is performed by this evidence update.
