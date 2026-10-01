@@ -91,6 +91,7 @@ export async function intelligentBusinessSearch(input: { query: string; limit?: 
   const query = input.query.trim().toLowerCase();
   if (query.length < 2) throw new Error("Search query must be at least 2 characters");
   const data = await listBusinessData();
+  const safeLimit = Number.isFinite(input.limit) ? Math.max(1, Math.min(Math.floor(input.limit!), 30)) : 20;
   const terms = [...new Set(query.split(/\s+/).filter(Boolean))];
   const scoreText = (text: string) => {
     const haystack = text.toLowerCase();
@@ -100,7 +101,7 @@ export async function intelligentBusinessSearch(input: { query: string; limit?: 
     ...data.posts.map(item => ({ type: item.type, id: item.id, title: item.title ?? "Untitled", text: item.body, score: scoreText(`${item.title ?? ""} ${item.body} ${item.authorName ?? ""}`) })),
     ...data.opportunities.map(item => ({ type: "opportunity", id: item.id, title: item.title, text: item.description, score: scoreText(`${item.title} ${item.description} ${item.sector} ${item.location ?? ""}`) })),
     ...data.companies.map(item => ({ type: "company", id: item.id, title: item.name, text: item.description ?? "", score: scoreText(`${item.name} ${item.description ?? ""} ${item.industry ?? ""} ${item.location ?? ""}`) })),
-  ].filter(item => item.score > 0).sort((a, b) => b.score - a.score || a.title.localeCompare(b.title)).slice(0, input.limit ?? 20);
+  ].filter(item => item.score > 0).sort((a, b) => b.score - a.score || a.title.localeCompare(b.title)).slice(0, safeLimit);
   return { query: input.query.trim(), results, mode: "hybrid-keyword", aiReady: true };
 }
 
