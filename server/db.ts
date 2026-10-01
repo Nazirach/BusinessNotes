@@ -1,4 +1,4 @@
-import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, count, desc, eq, inArray, like, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { auditLogs, companies, InsertUser, opportunities, posts, profiles, users, interests, postComments, postLikes, postSaves, follows, conversations, conversationParticipants, messages, notifications, leads, verificationRequests, postCorrections, postTakedowns, postAppeals, postSources, postEvidence, reporterRequests, contentReports, userBlocks, userMutes, mediaAssets, mediaCaptions, mediaModeration, moderationCases, privacySettings } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -44,6 +44,17 @@ export async function requestReporterStatus(userId: number, input: { outlet?: st
   return (await db.select().from(reporterRequests).where(eq(reporterRequests.id, id)).limit(1))[0];
 }
 
+
+export async function searchPublishedNews(query: string, limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  const term = `%${query.trim().replace(/[\\%_]/g, "\\export async function listReporterRequests(")}%`;
+  const rows = await db.select({ post: posts, authorName: users.name }).from(posts).leftJoin(users, eq(posts.authorId, users.id))
+    .where(and(eq(posts.type, "news"), eq(posts.status, "published"), or(like(posts.title, term), like(posts.body, term), like(posts.source, term))))
+    .orderBy(desc(posts.publishedAt), desc(posts.createdAt)).limit(limit);
+  return rows.map(row => ({ ...row.post, authorName: row.authorName }));
+}
+
 export async function listReporterRequests(status?: "pending" | "approved" | "rejected") {
   const db = await getDb();
   if (!db) return [];
@@ -68,6 +79,13 @@ export async function reviewReporterStatus(adminId: number, requestId: number, d
   await db.insert(auditLogs).values({ userId: adminId, action: `reporter.${decision}`, entityType: "user", entityId: row[0].userId, metadata: JSON.stringify({ requestId, note: note?.trim() || null }) });
   await createNotification({ userId: row[0].userId, type: "reporter", title: decision === "approved" ? "Reporter status approved" : "Reporter application rejected", body: note?.trim() || (decision === "approved" ? "You can now submit journalism content as a verified reporter." : "Your reporter application was not approved.") });
   return (await db.select().from(reporterRequests).where(eq(reporterRequests.id, requestId)).limit(1))[0];
+}
+
+
+export async function bulkReviewReporterStatus(adminId: number, requestIds: number[], decision: "approved" | "rejected", note?: string) {
+  const results = [];
+  for (const requestId of requestIds) results.push(await reviewReporterStatus(adminId, requestId, decision, note));
+  return results;
 }
 
 export async function setEditorRole(adminId: number, userId: number, enabled: boolean) {
@@ -290,6 +308,13 @@ export async function takedownEditorialPost(adminId: number, postId: number, rea
   await db.insert(auditLogs).values({ userId: adminId, action: "editorial.takedown", entityType: "post", entityId: postId, metadata: JSON.stringify({ reason: reason.trim(), evidence: evidence?.trim() || null }) });
   await createNotification({ userId: row[0].authorId, type: "editorial", title: "Content taken down", body: reason.trim() });
   return (await db.select().from(posts).where(eq(posts.id, postId)).limit(1))[0];
+}
+
+
+export async function bulkReviewEditorialAppeals(adminId: number, appealIds: number[], decision: "approved" | "rejected", note?: string) {
+  const results = [];
+  for (const appealId of appealIds) results.push(await reviewEditorialAppeal(adminId, appealId, decision, note));
+  return results;
 }
 
 export async function appealEditorialPost(userId: number, postId: number, reason: string) {
