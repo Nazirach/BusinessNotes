@@ -21,7 +21,7 @@ describe("business router authorization and validation", () => {
     await expect(caller.business.interest({ opportunityId: 0 })).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
-  it("rejects interest mutation for anonymous callers", async () => {
+  it("requires a meaningful query for news search", async () => {\n    const caller = appRouter.createCaller(context(false));\n    await expect(caller.business.searchNews({ query: "a" })).rejects.toMatchObject({ code: "BAD_REQUEST" });\n  });\n\n  it("rejects interest mutation for anonymous callers", async () => {
     const caller = appRouter.createCaller(context(false));
     await expect(caller.business.interest({ opportunityId: 1 })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
