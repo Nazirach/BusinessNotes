@@ -1,0 +1,109 @@
+# BUSINESSNOTES — HISTORICAL EVIDENCE RECONSTRUCTION UPDATE
+## 2026-10-01
+
+Status: **EVIDENCE RECONSTRUCTION IN PROGRESS**
+
+This document records a controlled GitHub update. It does not modify product architecture, application code, database schema, migration SQL, or production behavior.
+
+## Baseline
+
+- Repository: `Nazirach/BusinessNotes`
+- Main baseline: `32fcd4af42a48b41b308382e5ee5746a976957cc`
+- Manus checkpoint reported by prior project handoff: `40e1d24`
+- Manus local commit reported by prior project handoff: `d480b39f29ee9b915c57dce53284a9fb61b78d83`
+- Executable source candidate: `sync/full-source-tree`
+
+## Evidence already established
+
+The executable source candidate contains the BusinessNotes application tree and supporting configuration. It is not treated as proof that the source is the Manus checkpoint.
+
+The Manus handoff states that validation had passed for typecheck, 54 unit tests, production build, and 6 browser E2E tests. Those historical claims are retained as claims from the Manus handoff and are not promoted to current runtime proof.
+
+## Historical reconstruction performed in this update
+
+A repository commit-history search was attempted for the following migration/history markers:
+
+- `0005_business_network`
+- `seo public editorial`
+- `trust safety`
+- `governance`
+- `Extract BusinessNotes source tree`
+
+The GitHub commit-search connector returned no matching commit records for these searches.
+
+This is **not evidence that the commits never existed**. It only means that this search path did not recover the historical commit records.
+
+## Migration evidence currently retained
+
+### 0005
+
+The live Drizzle journal contains:
+
+`0005_business_network`
+
+but the corresponding `drizzle/0005.sql` artifact is absent from the executable source candidate.
+
+Classification: **JOURNAL ENTRY PRESENT / SQL ARTIFACT NOT RECOVERED**
+
+No SQL is reconstructed from schema inference.
+
+### 0014
+
+`drizzle/0014_seo_public_editorial.sql` exists and is a no-schema-change checkpoint marker, but no corresponding live journal entry has been established.
+
+Classification: **SQL ARTIFACT PRESENT / JOURNAL ENTRY NOT ESTABLISHED**
+
+### 0015
+
+`drizzle/0015_trust_safety.sql` exists and is represented in the journal.
+
+Classification: **JOURNALED**
+
+### 0016
+
+No SQL artifact or journal entry has been established.
+
+Classification: **ABSENT / INTENT UNKNOWN**
+
+### 0017
+
+`drizzle/0017_governance.sql` exists, but no corresponding live journal entry has been established.
+
+Classification: **SQL ARTIFACT PRESENT / JOURNAL ENTRY NOT ESTABLISHED**
+
+## Manus status
+
+No verified GitHub commit or branch corresponding to `40e1d24` or `d480b39f29ee9b915c57dce53284a9fb61b78d83` has been recovered through the available repository evidence.
+
+Therefore:
+
+**MANUS = PENDING / UNRECONCILED**
+
+The presence of Manus-related runtime dependencies in source is not sufficient to establish checkpoint provenance.
+
+## Safety rules
+
+Until historical evidence is recovered:
+
+- Do not invent `0005.sql`.
+- Do not invent `0016.sql`.
+- Do not edit `drizzle/meta/_journal.json` to make the sequence appear consistent.
+- Do not run production migrations.
+- Do not merge `sync/full-source-tree` into `main`.
+- Do not treat historical Manus test claims as current runtime verification.
+- Do not start unrelated feature development.
+- Do not redesign the architecture.
+
+## Next evidence required
+
+1. Recover historical migration trees or source archives containing the missing artifacts.
+2. Recover the original Manus checkpoint/export corresponding to `40e1d24`.
+3. Compare Manus source against the verified BusinessNotes baseline.
+4. Classify each Manus change as SAFE EXTENSION, CORRECTION, BUG FIX, DUPLICATE, REFACTOR, ARCHITECTURAL CHANGE, PRODUCT-MEANING CHANGE, or UNCERTAIN.
+5. Only then decide whether migration repair or source integration is required.
+
+## Current gate
+
+**BUSINESSNOTES — RECONCILIATION INCOMPLETE**
+
+This update intentionally records evidence and preserves the existing product and architecture without changing `main`.
