@@ -48,7 +48,7 @@ export async function requestReporterStatus(userId: number, input: { outlet?: st
 export async function searchPublishedNews(query: string, limit = 20) {
   const db = await getDb();
   if (!db) return [];
-  const term = `%${query.trim().replace(/[\\%_]/g, "\\const term = `%${query.trim().replace(/[\\%_]/g, "\\export async function listReporterRequests(")}%`;")}%`;
+  const term = `%${query.trim().replace(/[\\%_]/g, "\\$&")}%`;
   const rows = await db.select({ post: posts, authorName: users.name }).from(posts).leftJoin(users, eq(posts.authorId, users.id))
     .where(and(eq(posts.type, "news"), eq(posts.status, "published"), or(like(posts.title, term), like(posts.body, term), like(posts.source, term))))
     .orderBy(desc(posts.publishedAt), desc(posts.createdAt)).limit(limit);
