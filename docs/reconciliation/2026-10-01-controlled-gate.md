@@ -1,240 +1,174 @@
 # BUSINESSNOTES — CONTROLLED RECONCILIATION GATE
 ## Live GitHub Evidence Update — 2026-10-01
 
-Status: **RECONCILIATION INCOMPLETE — EVIDENCE LOCKED**
+Status: **RECONCILIATION INCOMPLETE — EVIDENCE/DECISION REQUIRED**
 
-## 1. Scope
+## New evidence established
 
-This report records a live GitHub reconciliation pass. It does not introduce product concepts, feature code, architecture changes, database repairs, migrations, merges, or changes to `main`.
+### Migration 0005
+The live Drizzle journal explicitly contains:
+- idx 5
+- tag: `0005_business_network`
+- version 5
+- breakpoints: true
 
-Evidence hierarchy:
-1. Actual repository state
-2. Actual source files
-3. Migration metadata and files
-4. CI/runtime evidence when directly available
-5. Historical reports only as context
+The corresponding SQL file `drizzle/0005.sql` is absent from `sync/full-source-tree`.
 
-## 2. Repository state
+Classification:
 
-Repository: `Nazirach/BusinessNotes`
+**VERIFIED MISSING MIGRATION FILE WITH JOURNAL ENTRY**
 
-Default branch: `main`
+We must not infer its SQL contents.
 
-Verified main baseline:
-`32fcd4af42a48b41b308382e5ee5746a976957cc`
+Migration 0006 immediately continues with editorial workflow changes to the `posts` table. This establishes metadata sequence continuity but does not reconstruct 0005.
 
-Verified branches include:
-- `main`
-- `docs/continuity-protocol`
-- `sync/full-source-tree`
-- deployment branches
+### Migration 0014
+`drizzle/0014_seo_public_editorial.sql` exists and explicitly contains no schema change; it is a checkpoint marker.
 
-Existing continuity PR:
-- PR #1
-- `docs/continuity-protocol` → `main`
-- Open, not merged
-- Base SHA: `32fcd4af42a48b41b308382e5ee5746a976957cc`
-- Head SHA: `454e3f647cfb635091b018b10abea1938c32f680`
+It is absent from the live journal.
 
-No evidence was found that Manus checkpoint `40e1d24` exists as a GitHub commit. Therefore it remains **PENDING / UNRECONCILED**.
+Classification:
 
-## 3. Executable source
+**VERIFIED FILE / UNJOURNALED CHECKPOINT**
 
-`sync/full-source-tree` is a real GitHub branch containing the executable application tree.
+### Migration 0015
+`drizzle/0015_trust_safety.sql` exists, creates contentReports, userBlocks, and userMutes, and is present in the journal.
 
-Live comparison:
-- Base: `main`
-- Head: `sync/full-source-tree`
-- Ahead: 23 commits
-- Behind: 0 commits
-- Merge base: main `32fcd4a...`
+Classification:
 
-The branch contains client, server, shared, drizzle, e2e, deployment, and documentation files.
+**VERIFIED FILE / JOURNALED**
 
-Conclusion:
-**VERIFIED — candidate executable source tree.**
+### Migration 0016
+No 0016 SQL file was found and no 0016 journal entry exists.
 
-This does NOT prove that it is the unpublished Manus checkpoint.
+Classification:
 
-## 4. Database / migration reconciliation
+**VERIFIED ABSENCE — INTENT UNKNOWN**
 
-Live evidence confirms the migration sequence is not currently self-consistent.
+### Migration 0017
+`drizzle/0017_governance.sql` exists and creates moderationCases and privacySettings.
 
-Present SQL migration files include:
-- 0000
-- 0001
-- 0002
-- 0003
-- 0004
-- 0006
-- 0007
-- 0008
-- 0009
-- 0010
-- 0011
-- 0012
-- 0013
-- 0014
-- 0015
-- 0017
+It is absent from the journal.
 
-Therefore:
-- migration file **0005 is missing**
-- migration file **0016 is missing**
-- migration file **0014 exists**
+Classification:
 
-However, live `drizzle/meta/_journal.json` records:
-- 0000–0005
-- 0006–0013
-- 0015
+**VERIFIED FILE / UNJOURNALED MIGRATION**
 
-It does NOT record 0014 or 0017.
+## Refined migration conclusion
 
-This produces two distinct metadata/file discrepancies:
-1. Journal references **0005**, but SQL file 0005 is absent.
-2. SQL files **0014** and **0017** exist, but are absent from the journal.
+The issue is not merely a missing sequence number. The SQL artifact set and Drizzle journal represent different historical states.
 
-The current journal therefore cannot be treated as a complete authoritative record of the SQL files present in the branch.
+We do not yet know whether:
+1. 0005 existed in an earlier tree and was later removed;
+2. the source-tree extraction omitted historical artifacts;
+3. 0014 and 0017 were generated after the current journal state;
+4. journal metadata was intentionally or accidentally changed;
+5. or another historical branch contains the intended migration state.
 
-No migration was modified.
+No explanation is adopted without evidence.
 
-## 5. Migration semantics observed
+**No migration repair has been performed.**
 
-Migration 0014 is explicitly a checkpoint marker and contains no schema change.
+## Manus checkpoint
 
-Migration 0015 creates Trust & Safety tables:
-- contentReports
-- userBlocks
-- userMutes
+Manus checkpoint `40e1d24` still has no verified GitHub commit representation.
 
-Migration 0017 creates Governance tables:
-- moderationCases
-- privacySettings
+Searching the repository for the literal checkpoint did not produce a matching commit.
 
-The schema source contains corresponding application tables for these areas.
+The presence of `vite-plugin-manus-runtime` in source is not proof that checkpoint `40e1d24` is represented by the current Git history.
 
-This establishes useful source-level correspondence, but does NOT establish safe production migration history.
+Classification:
 
-## 6. Production startup risk
+**MANUS = PENDING / UNRECONCILED**
 
-`scripts/start-production.sh` currently executes:
+## Production migration behavior
+
+The executable source contains `scripts/start-production.sh`, which runs:
 
 1. `pnpm db:migrate`
 2. `pnpm start`
 
-Because the migration metadata/file chain is not yet reconciled, automatic migration during production startup must remain a **REQUIRES DECISION / BLOCKED FOR PRODUCTION** item.
+The current Dockerfile points production startup to that script.
 
-This report does not change that script.
+This behavior was introduced by commit:
 
-## 7. Application/database contract
+`54d7b3f775fc0af0c093276fc21fe30162057af2`
 
-The executable source contains:
-- Drizzle schema
-- database helpers
-- tRPC routers
-- authentication/session code
-- authorization procedures
-- social/business-network procedures
-- editorial/source/evidence structures
-- media structures
-- trust & safety structures
-- governance structures
-- tests and E2E tests
+Message:
 
-The schema includes users, profiles, companies, posts, opportunities, interests, leads, verification requests, media, editorial/source/evidence, social, messaging, notifications, moderation, privacy, blocks/mutes, and audit logs.
+`chore: run database migrations before production start`
 
-This is source-level evidence only. It is not a claim that every external dependency or production environment is currently operational.
+Because migration history is unresolved, production migration safety remains:
 
-## 8. Runtime status
+**BLOCKED / REQUIRES DECISION**
 
-No new production runtime proof was established by this GitHub-only reconciliation pass.
+No production script was changed.
 
-Therefore:
-- Runtime: **UNVERIFIED**
-- Production database: **UNVERIFIED**
-- OAuth/external services: **UNVERIFIED**
-- Media storage/external integrations: **UNVERIFIED**
-- AI external runtime: **UNVERIFIED**
+## Working-source status
 
-Historical test claims are not promoted to current runtime proof.
+`sync/full-source-tree` remains:
 
-## 9. Decision gate
+**VERIFIED EXECUTABLE SOURCE CANDIDATE**
 
-### A. Can sync/full-source-tree be treated as executable working source?
-**YES — candidate working source, subject to reconciliation.**
+It must not automatically replace `main`.
 
-### B. Can it replace main automatically?
-**NO.**
+## Runtime
 
-### C. Is Manus 40e1d24 reconciled?
-**NO — evidence not present in GitHub.**
+No new controlled runtime/database proof was established during this GitHub evidence pass.
 
-### D. Is the migration chain safe to declare production-ready?
-**NO — not until journal/file history is reconciled and runtime/database validation is performed.**
+Runtime remains:
 
-### E. Should migration files be repaired now?
-**NO.**
+**UNVERIFIED**
 
-The correct next action is evidence collection/reconstruction of the intended migration history, not speculative repair.
+## Decision gate
 
-### F. Is a product or architecture redesign required by this audit?
-**NO evidence found.**
-
-## 10. Current gate status
-
-| Gate | Status |
+| Area | Status |
 |---|---|
 | Product identity | VERIFIED |
-| Core direction | VERIFIED |
+| Core flow | VERIFIED |
 | Main baseline | VERIFIED |
-| Executable source tree | VERIFIED |
-| Sync branch relationship | VERIFIED |
-| Manus checkpoint | PENDING |
-| Migration file/journal consistency | BLOCKED |
+| Executable source | VERIFIED |
+| 0005 journal entry | VERIFIED |
+| 0005 SQL file | MISSING |
+| 0014 SQL file | VERIFIED |
+| 0014 journal entry | MISSING |
+| 0015 SQL + journal | VERIFIED |
+| 0016 | ABSENT / INTENT UNKNOWN |
+| 0017 SQL file | VERIFIED |
+| 0017 journal entry | MISSING |
+| Migration chain | BLOCKED |
+| Manus 40e1d24 | PENDING |
+| Runtime | UNVERIFIED |
 | Production migration safety | BLOCKED |
-| Runtime proof | UNVERIFIED |
 | Architecture redesign | NOT REQUIRED BY EVIDENCE |
 | Feature development | HOLD |
-| Main modification | NONE |
+| main modification | NONE |
 
-## 11. Required next evidence
+## Next evidence gate
 
-The next technical gate should obtain, without altering production or main:
+The next safe operation is **historical reconstruction only**:
 
-1. Full Git history of `sync/full-source-tree` migration-related commits.
-2. Origin/history of migration 0005 and why it is absent.
-3. Origin/history of migration 0014 and why it is absent from journal.
-4. Origin/history of migration 0017 and why it is absent from journal.
-5. Exact intended Drizzle journal/snapshot relationship.
-6. Any available original Manus checkpoint export or commit evidence for `40e1d24`.
-7. Runtime validation in a controlled development database only, after migration history is understood.
+1. inspect commit ancestry of the migration directory;
+2. identify the commit that introduced the `0005_business_network` journal entry;
+3. determine whether `0005.sql` existed in an earlier tree;
+4. identify introduction commits for 0014 and 0017;
+5. compare the journal at those historical points;
+6. inspect any surviving source-tree archive for the missing artifacts;
+7. seek the original Manus checkpoint/export corresponding to `40e1d24`;
+8. only after reconstruction decide whether migration repair is necessary.
 
-## 12. Non-negotiables retained
+Do not create replacement SQL from schema inference.
 
-- Do not invent Manus evidence.
-- Do not merge `sync/full-source-tree` into `main` automatically.
-- Do not repair migration history by guessing.
-- Do not run production migrations.
-- Do not redesign the product.
-- Do not begin unrelated feature development.
-- Evidence must determine the next state.
+Do not edit `_journal.json`.
+
+Do not run production migrations.
+
+Do not merge `sync/full-source-tree` into `main`.
 
 ## Final
 
-**BUSINESSNOTES remains one product with multiple source-control representations.**
+**BUSINESSNOTES — RECONCILIATION INCOMPLETE**
 
-Current authoritative working interpretation:
+The executable source is real and usable as a candidate working source, but migration history and Manus checkpoint remain unresolved.
 
-`main` = shared baseline
-
-`sync/full-source-tree` = verified executable source candidate
-
-`docs/continuity-protocol` = continuity documentation branch
-
-Manus `40e1d24` = pending external/unpublished checkpoint
-
-Database migration chain = unresolved reconciliation gate
-
-Overall status:
-
-**RECONCILIATION INCOMPLETE — EVIDENCE/DECISION REQUIRED**
+The next gate is historical evidence reconstruction, not feature development.
