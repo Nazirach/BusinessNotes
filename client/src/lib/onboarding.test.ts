@@ -12,4 +12,9 @@ describe("getOnboardingProgress", () => {
   it("handles an empty onboarding checklist", () => {
     expect(getOnboardingProgress(0, 0)).toBe(0);
   });
+
+  it("handles non-finite progress inputs", () => {
+    expect(getOnboardingProgress(Number.NaN, 4)).toBe(0);
+    expect(getOnboardingProgress(2, Number.POSITIVE_INFINITY)).toBe(0);
+  });
 });
