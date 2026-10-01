@@ -21,6 +21,12 @@ describe("business router authorization and validation", () => {
     await expect(caller.business.interest({ opportunityId: 0 })).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
+  it("validates public news search bounds before persistence", async () => {
+    const caller = appRouter.createCaller(context(false));
+    await expect(caller.business.searchNews({ query: "valid", limit: 0 })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.business.searchNews({ query: "valid", limit: 31 })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
   it("requires a meaningful query for news search", async () => {
     const caller = appRouter.createCaller(context(false));
     await expect(caller.business.searchNews({ query: "a" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
