@@ -8,7 +8,7 @@ const compact = (value: unknown, max = 5000) => {
   } catch {
     return "[unserializable]";
   }
-  return (serialized ?? "null").slice(0, max);
+  return (serialized ?? "null").slice(0, Number.isFinite(max) ? Math.max(1, Math.floor(max)) : 5000);
 };
 
 async function ask(system: string, user: string, maxTokens = 900) {
