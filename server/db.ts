@@ -123,12 +123,14 @@ export async function listBusinessData(viewerId?: number) {
     }
     return await canDiscover(db, viewerId, ownerId) && !(await isMuted(db, viewerId, ownerId));
   };
-  const visiblePosts = [];
-  for (const row of postRows) if (row.post.authorId === undefined || await allowedOwner(row.post.authorId)) visiblePosts.push({ ...row.post, authorName: row.authorName });
-  const visibleOpportunities = [];
-  for (const row of opportunityRows) if (await allowedOwner(row.ownerId)) visibleOpportunities.push(row);
-  const visibleCompanies = [];
-  for (const row of companyRows) if (await allowedOwner(row.ownerId)) visibleCompanies.push(row);
+  const [postVisibility, opportunityVisibility, companyVisibility] = await Promise.all([
+    Promise.all(postRows.map(async row => row.post.authorId === undefined || await allowedOwner(row.post.authorId))),
+    Promise.all(opportunityRows.map(row => allowedOwner(row.ownerId))),
+    Promise.all(companyRows.map(row => allowedOwner(row.ownerId))),
+  ]);
+  const visiblePosts = postRows.filter((_, index) => postVisibility[index]).map(row => ({ ...row.post, authorName: row.authorName }));
+  const visibleOpportunities = opportunityRows.filter((_, index) => opportunityVisibility[index]);
+  const visibleCompanies = companyRows.filter((_, index) => companyVisibility[index]);
   return { posts: visiblePosts.slice(0, 30), opportunities: visibleOpportunities.slice(0, 30), companies: visibleCompanies.slice(0, 30) };
 }
 
