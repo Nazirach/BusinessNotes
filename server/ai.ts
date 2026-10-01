@@ -130,10 +130,10 @@ export async function matchBusinessPartners(userId: number, input: { opportunity
     ? data.opportunities.find(item => item.id === input.opportunityId)
     : data.opportunities.find(item => `${item.title} ${item.description}`.toLowerCase().includes((input.query ?? "").toLowerCase().trim()));
   if (!opportunity) throw new Error("Opportunity not found");
-  const candidates = [];
-  for (const company of data.companies) {
-    if (company.ownerId !== userId && await canUserDiscover(userId, company.ownerId)) candidates.push(company);
-  }
+  const candidates = (await Promise.all(data.companies.map(async company => {
+    if (company.ownerId === userId) return null;
+    return (await canUserDiscover(userId, company.ownerId)) ? company : null;
+  }))).filter((company): company is (typeof data.companies)[number] => company !== null);
   const terms = `${opportunity.title} ${opportunity.description} ${opportunity.sector} ${opportunity.location ?? ""}`.toLowerCase().split(/\s+/).filter(Boolean);
   const ranked = candidates.map(company => {
     const haystack = `${company.name} ${company.description ?? ""} ${company.industry ?? ""} ${company.location ?? ""}`.toLowerCase();
