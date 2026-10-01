@@ -6,8 +6,10 @@ import { ENV } from './_core/env';
 let _db: ReturnType<typeof drizzle> | null = null;
 
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
-    try { _db = drizzle(process.env.DATABASE_URL); } catch (error) { console.warn("[Database] Failed to connect:", error); _db = null; }
+  const url = process.env.DATABASE_URL?.trim();
+  const configured = Boolean(url) && !url.includes("USER:PASSWORD@HOST") && !url.includes("DATABASE");
+  if (!_db && configured) {
+    try { _db = drizzle(url!); } catch (error) { console.warn("[Database] Failed to initialize:", error); _db = null; }
   }
   return _db;
 }
@@ -207,7 +209,7 @@ export async function getPublicEditorialById(postId: number) {
 
 export async function listPublishedNews() {
   const db = await getDb();
-  if (!db) throw new Error("Database is not available");
+  if (!db) return [];
   const rows = await db.select({ post: posts, authorName: users.name }).from(posts).leftJoin(users, eq(posts.authorId, users.id))
     .where(and(eq(posts.type, "news"), eq(posts.status, "published"))).orderBy(desc(posts.publishedAt), desc(posts.createdAt)).limit(50);
   const postRows = rows.map(row => ({ ...row.post, authorName: row.authorName }));
