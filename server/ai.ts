@@ -134,14 +134,15 @@ export async function matchBusinessPartners(userId: number, input: { opportunity
     if (company.ownerId === userId) return null;
     return (await canUserDiscover(userId, company.ownerId)) ? company : null;
   }))).filter((company): company is (typeof data.companies)[number] => company !== null);
-  const terms = `${opportunity.title} ${opportunity.description} ${opportunity.sector} ${opportunity.location ?? ""}`.toLowerCase().split(/\s+/).filter(Boolean);
+  const safeLimit = Number.isFinite(input.limit) ? Math.max(1, Math.min(Math.floor(input.limit!), 20)) : 10;
+  const terms = [...new Set(`${opportunity.title} ${opportunity.description} ${opportunity.sector} ${opportunity.location ?? ""}`.toLowerCase().split(/\s+/).filter(Boolean))];
   const ranked = candidates.map(company => {
     const haystack = `${company.name} ${company.description ?? ""} ${company.industry ?? ""} ${company.location ?? ""}`.toLowerCase();
     const hits = terms.filter(term => term.length > 3 && haystack.includes(term)).length;
     let score = Math.min(95, hits * 12 + (company.verified ? 5 : 0));
     if (opportunity.location && company.location && company.location.toLowerCase().includes(opportunity.location.toLowerCase())) score += 10;
     return { company, score: Math.min(score, 100), reasons: hits ? ["Shared business/industry signals"] : ["Potential strategic fit requiring review"] };
-  }).sort((a, b) => b.score - a.score).slice(0, Math.min(input.limit ?? 10, 20));
+  }).sort((a, b) => b.score - a.score).slice(0, safeLimit);
   return {
     opportunity: { id: opportunity.id, title: opportunity.title, sector: opportunity.sector, location: opportunity.location },
     matches: ranked,
