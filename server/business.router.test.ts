@@ -38,9 +38,26 @@ describe("business router authorization and validation", () => {
     await expect(caller.business.searchNews({ query: "news", limit: 31 })).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
-  it("rejects interest mutation for anonymous callers", async () => {
-    const caller = appRouter.createCaller(context(false));
-    await expect(caller.business.interest({ opportunityId: 1 })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  it("rejects anonymous social and moderation mutations", async () => {
+    const anonymous = appRouter.createCaller(context(false));
+    await expect(anonymous.business.comment({ postId: 1, body: "test comment" })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    await expect(anonymous.business.like({ postId: 1 })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    await expect(anonymous.business.reportPost({ postId: 1, reason: "spam" })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    await expect(anonymous.business.interest({ opportunityId: 1 })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  });
+
+  it("keeps the authenticated POST interaction chain separate from opportunity interest", async () => {
+    const caller = appRouter.createCaller(context());
+    await expect(caller.business.comment({ postId: 0, body: "test comment" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.business.like({ postId: 0 })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.business.reportPost({ postId: 0, reason: "spam" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.business.interest({ opportunityId: 0 })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("validates report input before persistence", async () => {
+    const caller = appRouter.createCaller(context());
+    await expect(caller.business.reportPost({ postId: 1, reason: "" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.business.reportPost({ postId: 1, reason: "x".repeat(81) })).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
   it("protects profile and company operations for anonymous callers", async () => {
@@ -55,10 +72,10 @@ describe("business router authorization and validation", () => {
     const caller = appRouter.createCaller(context());
     await expect(caller.business.createCompany({ name: "A", description: "", industry: "", location: "", website: "" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
+
   it("protects bulk editorial review mutations", async () => {
     const anonymous = appRouter.createCaller(context(false));
     await expect(anonymous.business.bulkReviewReporter({ requestIds: [1], decision: "approved" })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
     await expect(anonymous.business.bulkReviewAppeal({ appealIds: [1], decision: "approved" })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
-
 });
