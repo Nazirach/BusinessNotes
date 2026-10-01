@@ -278,7 +278,16 @@ function PostCard({ post, onInterest, social, isAuthenticated }: { post: Post; o
     const body = commentText.trim();
     if (!body) return toast.error(t("Write a comment first"));
     if (!isPersisted) {
+      const body = commentText.trim();
       setPreviewCommentCount(previous => previous + 1);
+      setLocalComments(previous => [...previous, {
+        id: Date.now(),
+        postId: post.id,
+        userId: 0,
+        body,
+        createdAt: new Date(),
+        authorName: t("You"),
+      }]);
       setCommentText("");
       toast.success(t("Comment added to preview"));
       return;
