@@ -107,3 +107,34 @@ Until historical evidence is recovered:
 **BUSINESSNOTES — RECONCILIATION INCOMPLETE**
 
 This update intentionally records evidence and preserves the existing product and architecture without changing `main`.
+
+
+## Newly recovered project evidence
+
+A previously supplied BusinessNotes synchronization document has now been located in the project files. It explicitly identifies:
+
+- Manus checkpoint: `40e1d24`
+- Manus local commit: `d480b39f29ee9b915c57dce53284a9fb61b78d83`
+- planned branch: `manus-sync-2026-10-01`
+- claimed Manus source areas: runtime, database, API, UI, AI, media, admin, testing, and documentation
+- claimed validation: `pnpm check`, 54 unit tests, `pnpm build`, and 6 browser E2E tests
+
+The same document states that the Manus branch was intended to be pushed and a PR created, but the actual source checkpoint is still not present in the GitHub repository.
+
+This recovered document is therefore **evidence of the Manus handoff claim**, not evidence that the source tree itself is currently available.
+
+The project-file search did not recover the actual Manus source files or a binary source archive that can be opened as the `40e1d24` checkpoint. Consequently, the file-by-file Manus reconciliation remains blocked.
+
+## Important distinction
+
+We now have:
+
+`MANUS HANDOFF DOCUMENT = RECOVERED`
+
+but:
+
+`MANUS SOURCE CHECKPOINT = NOT RECOVERED`
+
+These must remain separate.
+
+No application-code integration is performed from the handoff description alone.
