@@ -31,6 +31,11 @@ describe("admin queue helpers", () => {
     expect(paginate([1, 2, 3], Number.POSITIVE_INFINITY, Number.NaN)).toEqual({ items: [1], page: 1, pageCount: 3, total: 3 });
   });
 
+  it("sorts invalid dates deterministically", () => {
+    const invalid: Item = { status: "pending", createdAt: "not-a-date", label: "Invalid", detail: "Outlet" };
+    expect(filterAndSortQueue([invalid, items[0]], { status: "all", sort: "newest", searchText: i => i.label })).toEqual([items[0], invalid]);
+  });
+
   it("toggles", () => {
     expect(toggleSelection([2], 3, true)).toEqual([2, 3]);
     expect(toggleSelection([2, 3], 2, false)).toEqual([3]);
