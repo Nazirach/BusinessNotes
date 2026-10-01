@@ -32,6 +32,12 @@ describe("business router authorization and validation", () => {
     await expect(caller.business.searchNews({ query: "a" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
+  it("bounds news search at the router boundary", async () => {
+    const caller = appRouter.createCaller(context(false));
+    await expect(caller.business.searchNews({ query: "news", limit: 0 })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.business.searchNews({ query: "news", limit: 31 })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
   it("rejects interest mutation for anonymous callers", async () => {
     const caller = appRouter.createCaller(context(false));
     await expect(caller.business.interest({ opportunityId: 1 })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
