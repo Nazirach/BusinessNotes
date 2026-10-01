@@ -27,6 +27,7 @@ export const appRouter = router({
   }),
   business: router({
     list: publicProcedure.query(({ ctx }) => listBusinessData(ctx.user?.id)),
+    searchNews: publicProcedure.input(z.object({ query: z.string().trim().min(2).max(120), limit: z.number().int().min(1).max(30).optional() })).query(({ input }) => searchPublishedNews(input.query, input.limit)),
     news: publicProcedure.query(() => listPublishedNews()),
     publicEditorial: publicProcedure.input(z.object({ id: z.number().int().positive() })).query(async ({ input }) => getPublicEditorialById(input.id)),
     aiGenerate: protectedProcedure.input(z.object({ prompt: z.string().trim().min(2).max(8000), format: z.enum(["post", "article", "headline", "summary", "video-script"]).optional() })).mutation(async ({ ctx, input }) => {
@@ -248,6 +249,11 @@ export const appRouter = router({
       try { return await reviewReporterStatus(ctx.user.id, input.requestId, input.decision, input.note); }
       catch (error) { throw new TRPCError({ code: error instanceof Error && error.message === "Reporter request not found" ? "NOT_FOUND" : "BAD_REQUEST", message: error instanceof Error ? error.message : "Unable to review reporter request" }); }
     }),
+    bulkReviewReporter: protectedProcedure.input(z.object({ requestIds: z.array(z.number().int().positive()).min(1).max(100), decision: z.enum(["approved", "rejected"]), note: z.string().trim().max(2000).optional() })).mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      try { return await bulkReviewReporterStatus(ctx.user.id, input.requestIds, input.decision, input.note); }
+      catch (error) { throw new TRPCError({ code: error instanceof Error ? "BAD_REQUEST" : "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Unable to bulk review reporter requests" }); }
+    }),
     setEditor: protectedProcedure.input(z.object({ userId: z.number().int().positive(), enabled: z.boolean() })).mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
       try { return await setEditorRole(ctx.user.id, input.userId, input.enabled); }
@@ -261,6 +267,11 @@ export const appRouter = router({
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
       try { return await reviewEditorialAppeal(ctx.user.id, input.appealId, input.decision, input.note); }
       catch (error) { throw new TRPCError({ code: error instanceof Error && error.message === "Appeal not found" ? "NOT_FOUND" : "BAD_REQUEST", message: error instanceof Error ? error.message : "Unable to review appeal" }); }
+    }),
+    bulkReviewAppeal: protectedProcedure.input(z.object({ appealIds: z.array(z.number().int().positive()).min(1).max(100), decision: z.enum(["approved", "rejected"]), note: z.string().trim().max(2000).optional() })).mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      try { return await bulkReviewEditorialAppeals(ctx.user.id, input.appealIds, input.decision, input.note); }
+      catch (error) { throw new TRPCError({ code: error instanceof Error ? "BAD_REQUEST" : "INTERNAL_SERVER_ERROR", message: error instanceof Error ? error.message : "Unable to bulk review editorial appeals" }); }
     }),
     appealEditorial: protectedProcedure.input(z.object({ postId: z.number().int().positive(), reason: z.string().trim().min(3).max(2000) })).mutation(async ({ ctx, input }) => {
       try { return await appealEditorialPost(ctx.user.id, input.postId, input.reason); }
