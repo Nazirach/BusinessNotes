@@ -16,4 +16,10 @@ describe("rate limit baseline", () => {
     assertRateLimit("user:1", 1, 1000, 1100);
     assertRateLimit("user:2", 1, 1000, 500);
   });
+
+  it("rejects invalid configuration", () => {
+    expect(() => assertRateLimit("user:1", 0, 1000, 100)).toThrow("Invalid rate limit configuration");
+    expect(() => assertRateLimit("user:1", 1, 0, 100)).toThrow("Invalid rate limit configuration");
+    expect(() => assertRateLimit("user:1", 1, 1000, Number.NaN)).toThrow("Invalid rate limit configuration");
+  });
 });
