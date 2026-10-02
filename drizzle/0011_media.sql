@@ -1,0 +1,20 @@
+CREATE TABLE `mediaAssets` (
+  `id` int AUTO_INCREMENT NOT NULL,
+  `ownerId` int NOT NULL,
+  `postId` int,
+  `kind` enum('image','video') NOT NULL,
+  `status` enum('uploaded','processing','ready','failed') NOT NULL DEFAULT 'uploaded',
+  `originalName` varchar(255) NOT NULL,
+  `mimeType` varchar(120) NOT NULL,
+  `sizeBytes` int NOT NULL,
+  `storageKey` varchar(500) NOT NULL,
+  `url` varchar(600) NOT NULL,
+  `thumbnailUrl` varchar(600),
+  `durationMs` int,
+  `width` int,
+  `height` int,
+  `processingError` text,
+  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+);

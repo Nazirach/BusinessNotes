@@ -1,0 +1,2 @@
+-- SEO/public editorial batch does not require schema changes.
+-- Kept as a checkpoint marker so deployments can track the batch consistently.

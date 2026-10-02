@@ -20,6 +20,8 @@ COPY --from=build /app/package.json /app/pnpm-lock.yaml ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/drizzle ./drizzle
+COPY --from=build /app/scripts ./scripts
+RUN chmod +x ./scripts/start-production.sh
 
 EXPOSE 3000
-CMD ["pnpm", "start"]
+CMD ["./scripts/start-production.sh"]

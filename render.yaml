@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: businessnotes
+    runtime: docker
+    branch: sync/full-source-tree
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /healthz
